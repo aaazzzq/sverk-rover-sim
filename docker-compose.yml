@@ -1,0 +1,20 @@
+services:
+  gazebo:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE_IMAGE: ${ROVER_BASE_IMAGE:-sverk/ros2:sitl-novnc}
+    image: sverk/rover-gz-sandbox:dev
+    container_name: small_rover_gz
+    environment:
+      GZ_SIM_RESOURCE_PATH: /workspace/models
+      LIBGL_ALWAYS_SOFTWARE: "1"
+      VNC_RESOLUTION: ${VNC_RESOLUTION:-1920x1080x24}
+    ports:
+      - "127.0.0.1:6081:6080"
+    shm_size: 1gb
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/workspace

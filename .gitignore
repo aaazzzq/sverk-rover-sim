@@ -1,0 +1,8 @@
+.gz/
+log/
+build/
+install/
+docker-build-*.log
+__pycache__/
+*.py[cod]
+.pytest_cache/

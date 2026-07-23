@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <model name="sverk_mecanum_wheel">
+    <!-- This is a suspended single-wheel inspection model, not a vehicle. -->
+    <link name="wheel_mount">
+      <gravity>false</gravity>
+      <inertial>
+        <mass>0.01</mass>
+        <inertia>
+          <ixx>0.000001</ixx>
+          <iyy>0.000001</iyy>
+          <izz>0.000001</izz>
+        </inertia>
+      </inertial>
+      <visual name="mount_marker">
+        <geometry>
+          <sphere><radius>0.002</radius></sphere>
+        </geometry>
+        <material><diffuse>0.9 0.1 0.1 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="wheel_hub">
+      <gravity>false</gravity>
+      <inertial>
+        <mass>0.10</mass>
+        <inertia>
+          <ixx>0.000030</ixx>
+          <iyy>0.000020</iyy>
+          <izz>0.000020</izz>
+        </inertia>
+      </inertial>
+      <visual name="wheel_mesh">
+        <geometry>
+          <mesh>
+            <uri>model://sverk_mecanum_wheel/meshes/Mecanum_Wheel_60mm_Left.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="hub_collision">
+        <pose>0 0 0 0 1.570796327 0</pose>
+        <geometry>
+          <cylinder><radius>0.017</radius><length>0.022</length></cylinder>
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="wheel_joint" type="revolute">
+      <parent>wheel_mount</parent>
+      <child>wheel_hub</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit><lower>-1e16</lower><upper>1e16</upper><effort>2</effort><velocity>100</velocity></limit>
+        <dynamics><damping>0.0001</damping></dynamics>
+      </axis>
+    </joint>
+
+    <!-- Roller 0 centre is (0.003, 22.937, -1.705) mm; its measured central-axis direction is (0.707107, -0.053382, -0.705129). -->
+    <link name="roller_0"><pose relative_to="wheel_hub">0.000003 0.022937 -0.001705 0 0.782577251 -0.075350181</pose><gravity>false</gravity><inertial><mass>0.003</mass><inertia><ixx>0.00000002</ixx><iyy>0.00000024</iyy><izz>0.00000024</izz></inertia></inertial><visual name="mesh"><geometry><mesh><uri>model://sverk_mecanum_wheel/meshes/roller_Varsayilan.obj</uri></mesh></geometry></visual><collision name="collision"><pose>0 0 0 0 1.570796327 0</pose><geometry><cylinder><radius>0.0059</radius><length>0.0308</length></cylinder></geometry></collision></link>
+    <link name="roller_1"><pose relative_to="wheel_hub">0.000003 0.017424525 0.015013291 0.988897628 0.566086368 0.577602867</pose><gravity>false</gravity><inertial><mass>0.003</mass><inertia><ixx>0.00000002</ixx><iyy>0.00000024</iyy><izz>0.00000024</izz></inertia></inertial><visual name="mesh"><geometry><mesh><uri>model://sverk_mecanum_wheel/meshes/roller_Varsayilan.obj</uri></mesh></geometry></visual><collision name="collision"><pose>0 0 0 0 1.570796327 0</pose><geometry><cylinder><radius>0.0059</radius><length>0.0308</length></cylinder></geometry></collision></link>
+    <link name="roller_2"><pose relative_to="wheel_hub">0.000003 0.001705 0.022937 1.623977028 0.053405549 0.783997995</pose><gravity>false</gravity><inertial><mass>0.003</mass><inertia><ixx>0.00000002</ixx><iyy>0.00000024</iyy><izz>0.00000024</izz></inertia></inertial><visual name="mesh"><geometry><mesh><uri>model://sverk_mecanum_wheel/meshes/roller_Varsayilan.obj</uri></mesh></geometry></visual><collision name="collision"><pose>0 0 0 0 1.570796327 0</pose><geometry><cylinder><radius>0.0059</radius><length>0.0308</length></cylinder></geometry></collision></link>
+    <link name="roller_3"><pose relative_to="wheel_hub">0.000003 -0.015013291 0.017424525 2.223416667 -0.478943805 0.648925998</pose><gravity>false</gravity><inertial><mass>0.003</mass><inertia><ixx>0.00000002</ixx><iyy>0.00000024</iyy><izz>0.00000024</izz></inertia></inertial><visual name="mesh"><geometry><mesh><uri>model://sverk_mecanum_wheel/meshes/roller_Varsayilan.obj</uri></mesh></geometry></visual><collision name="collision"><pose>0 0 0 0 1.570796327 0</pose><geometry><cylinder><radius>0.0059</radius><length>0.0308</length></cylinder></geometry></collision></link>
+    <link name="roller_4"><pose relative_to="wheel_hub">0.000003 -0.022937 0.001705 3.141592654 -0.782577251 0.075350181</pose><gravity>false</gravity><inertial><mass>0.003</mass><inertia><ixx>0.00000002</ixx><iyy>0.00000024</iyy><izz>0.00000024</izz></inertia></inertial><visual name="mesh"><geometry><mesh><uri>model://sverk_mecanum_wheel/meshes/roller_Varsayilan.obj</uri></mesh></geometry></visual><collision name="collision"><pose>0 0 0 0 1.570796327 0</pose><geometry><cylinder><radius>0.0059</radius><length>0.0308</length></cylinder></geometry></collision></link>
+    <link name="roller_5"><pose relative_to="wheel_hub">0.000003 -0.017424525 -0.015013291 -2.152695026 -0.566086368 -0.577602867</pose><gravity>false</gravity><inertial><mass>0.003</mass><inertia><ixx>0.00000002</ixx><iyy>0.00000024</iyy><izz>0.00000024</izz></inertia></inertial><visual name="mesh"><geometry><mesh><uri>model://sverk_mecanum_wheel/meshes/roller_Varsayilan.obj</uri></mesh></geometry></visual><collision name="collision"><pose>0 0 0 0 1.570796327 0</pose><geometry><cylinder><radius>0.0059</radius><length>0.0308</length></cylinder></geometry></collision></link>
+    <link name="roller_6"><pose relative_to="wheel_hub">0.000003 -0.001705 -0.022937 -1.517615626 -0.053405549 -0.783997995</pose><gravity>false</gravity><inertial><mass>0.003</mass><inertia><ixx>0.00000002</ixx><iyy>0.00000024</iyy><izz>0.00000024</izz></inertia></inertial><visual name="mesh"><geometry><mesh><uri>model://sverk_mecanum_wheel/meshes/roller_Varsayilan.obj</uri></mesh></geometry></visual><collision name="collision"><pose>0 0 0 0 1.570796327 0</pose><geometry><cylinder><radius>0.0059</radius><length>0.0308</length></cylinder></geometry></collision></link>
+    <link name="roller_7"><pose relative_to="wheel_hub">0.000003 0.015013291 -0.017424525 -0.918175987 0.478943805 -0.648925998</pose><gravity>false</gravity><inertial><mass>0.003</mass><inertia><ixx>0.00000002</ixx><iyy>0.00000024</iyy><izz>0.00000024</izz></inertia></inertial><visual name="mesh"><geometry><mesh><uri>model://sverk_mecanum_wheel/meshes/roller_Varsayilan.obj</uri></mesh></geometry></visual><collision name="collision"><pose>0 0 0 0 1.570796327 0</pose><geometry><cylinder><radius>0.0059</radius><length>0.0308</length></cylinder></geometry></collision></link>
+
+    <joint name="roller_0_joint" type="revolute"><pose relative_to="wheel_hub">0.000003 0.022937 -0.001705 0 0.782577251 -0.075350181</pose><parent>wheel_hub</parent><child>roller_0</child><axis><xyz>1 0 0</xyz><limit><lower>-1e16</lower><upper>1e16</upper><effort>0</effort><velocity>1000</velocity></limit><dynamics><damping>0.00001</damping><friction>0.00001</friction></dynamics></axis></joint>
+    <joint name="roller_1_joint" type="revolute"><pose relative_to="wheel_hub">0.000003 0.017424525 0.015013291 0.988897628 0.566086368 0.577602867</pose><parent>wheel_hub</parent><child>roller_1</child><axis><xyz>1 0 0</xyz><limit><lower>-1e16</lower><upper>1e16</upper><effort>0</effort><velocity>1000</velocity></limit><dynamics><damping>0.00001</damping><friction>0.00001</friction></dynamics></axis></joint>
+    <joint name="roller_2_joint" type="revolute"><pose relative_to="wheel_hub">0.000003 0.001705 0.022937 1.623977028 0.053405549 0.783997995</pose><parent>wheel_hub</parent><child>roller_2</child><axis><xyz>1 0 0</xyz><limit><lower>-1e16</lower><upper>1e16</upper><effort>0</effort><velocity>1000</velocity></limit><dynamics><damping>0.00001</damping><friction>0.00001</friction></dynamics></axis></joint>
+    <joint name="roller_3_joint" type="revolute"><pose relative_to="wheel_hub">0.000003 -0.015013291 0.017424525 2.223416667 -0.478943805 0.648925998</pose><parent>wheel_hub</parent><child>roller_3</child><axis><xyz>1 0 0</xyz><limit><lower>-1e16</lower><upper>1e16</upper><effort>0</effort><velocity>1000</velocity></limit><dynamics><damping>0.00001</damping><friction>0.00001</friction></dynamics></axis></joint>
+    <joint name="roller_4_joint" type="revolute"><pose relative_to="wheel_hub">0.000003 -0.022937 0.001705 3.141592654 -0.782577251 0.075350181</pose><parent>wheel_hub</parent><child>roller_4</child><axis><xyz>1 0 0</xyz><limit><lower>-1e16</lower><upper>1e16</upper><effort>0</effort><velocity>1000</velocity></limit><dynamics><damping>0.00001</damping><friction>0.00001</friction></dynamics></axis></joint>
+    <joint name="roller_5_joint" type="revolute"><pose relative_to="wheel_hub">0.000003 -0.017424525 -0.015013291 -2.152695026 -0.566086368 -0.577602867</pose><parent>wheel_hub</parent><child>roller_5</child><axis><xyz>1 0 0</xyz><limit><lower>-1e16</lower><upper>1e16</upper><effort>0</effort><velocity>1000</velocity></limit><dynamics><damping>0.00001</damping><friction>0.00001</friction></dynamics></axis></joint>
+    <joint name="roller_6_joint" type="revolute"><pose relative_to="wheel_hub">0.000003 -0.001705 -0.022937 -1.517615626 -0.053405549 -0.783997995</pose><parent>wheel_hub</parent><child>roller_6</child><axis><xyz>1 0 0</xyz><limit><lower>-1e16</lower><upper>1e16</upper><effort>0</effort><velocity>1000</velocity></limit><dynamics><damping>0.00001</damping><friction>0.00001</friction></dynamics></axis></joint>
+    <joint name="roller_7_joint" type="revolute"><pose relative_to="wheel_hub">0.000003 0.015013291 -0.017424525 -0.918175987 0.478943805 -0.648925998</pose><parent>wheel_hub</parent><child>roller_7</child><axis><xyz>1 0 0</xyz><limit><lower>-1e16</lower><upper>1e16</upper><effort>0</effort><velocity>1000</velocity></limit><dynamics><damping>0.00001</damping><friction>0.00001</friction></dynamics></axis></joint>
+  </model>
+</sdf>

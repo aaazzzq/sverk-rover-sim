@@ -1,0 +1,8 @@
+.git
+.gz
+build
+install
+log
+docker-build-*.log
+**/__pycache__
+**/*.pyc
