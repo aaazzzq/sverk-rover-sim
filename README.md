@@ -83,7 +83,11 @@ source /opt/ros/humble/setup.bash
 source /opt/small_rover_ws/setup.bash
 ros2 launch small_rover_sim small_rover.launch.py \
   world_name:=obrik_rover_arena \
-  x:=1.0 y:=0.0 z:=0.013 yaw:=0.0
+  x:=1.0 y:=0.0 z:=0.013 yaw:=0.0 \
+  marker_enabled:=true \
+  marker_size:=0.08 \
+  marker_vocabulary:=DICT_4X4_1000 \
+  marker_id:=99
 ```
 
 The launch file does not start Gazebo. It:
@@ -100,6 +104,24 @@ headless container entrypoint accepts the same launch arguments:
   world_name:=obrik_rover_arena \
   x:=1.0 y:=0.0 z:=0.013
 ```
+
+## Rover ArUco marker
+
+The launch file can attach an upward-facing `aruco_marker_link` to
+`base_link`. It is enabled by default.
+
+| Launch argument | Environment variable | Default |
+|---|---|---|
+| `marker_enabled` | `ROVER_MARKER_ENABLED` | `true` |
+| `marker_size` | `ROVER_MARKER_SIZE` | `0.08` m |
+| `marker_vocabulary` | `ROVER_MARKER_VOCABULARY` | `DICT_4X4_1000` |
+| `marker_id` | `ROVER_MARKER_ID` | `99` |
+| `marker_x`, `marker_y`, `marker_z` | `ROVER_MARKER_X`, `ROVER_MARKER_Y`, `ROVER_MARKER_Z` | `-0.043195`, `0.0`, `0.153` m |
+| `marker_yaw` | `ROVER_MARKER_YAW` | `0.0` rad |
+
+`marker_size` is the side length of the encoded black square; the generated
+white margin is additional. The vocabulary and ID must match the drone ArUco
+detector. Its top edge points toward rover `+X`.
 
 ## ROS interface
 

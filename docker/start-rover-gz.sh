@@ -48,7 +48,10 @@ done
 
 /usr/local/bin/start-rover-runtime.sh \
     world_name:=small_rover_drive_test \
-    spawn_rover:=false \
+    spawn_rover:=true \
+    x:=0.0 \
+    y:=0.0 \
+    z:=0.013 \
     use_sim_time:=true \
     >/tmp/small-rover-runtime.log 2>&1 &
 rover_runtime_pid=$!

@@ -6,6 +6,7 @@
   <maintainer email="devnull@example.invalid">sverk</maintainer>
   <license>Apache-2.0</license>
   <buildtool_depend>ament_python</buildtool_depend>
+  <exec_depend>ament_index_python</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
@@ -14,6 +15,7 @@
   <exec_depend>ros_gz_bridge</exec_depend>
   <exec_depend>ros_gz_sim</exec_depend>
   <exec_depend>small_rover_description</exec_depend>
+  <exec_depend>small_rover_marker_tools</exec_depend>
   <export>
     <build_type>ament_python</build_type>
   </export>

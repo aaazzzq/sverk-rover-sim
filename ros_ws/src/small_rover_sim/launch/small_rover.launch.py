@@ -1,8 +1,8 @@
 """Attach the small rover runtime to an existing Gazebo world."""
 
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable
-from launch.conditions import IfCondition
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, SetEnvironmentVariable
 from launch.substitutions import (
     EnvironmentVariable,
     LaunchConfiguration,
@@ -11,14 +11,63 @@ from launch.substitutions import (
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
+from small_rover_sim.marker_model import create_marker_model
+
+
+def _as_bool(value):
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _spawn_rover(context):
+    if not _as_bool(LaunchConfiguration("spawn_rover").perform(context)):
+        return []
+
+    entity_name = LaunchConfiguration("entity_name").perform(context)
+    model_file = (
+        get_package_share_directory("small_rover_description")
+        + "/models/small_rover/model.sdf"
+    )
+    if _as_bool(LaunchConfiguration("marker_enabled").perform(context)):
+        model_file = create_marker_model(
+            source_path=model_file,
+            entity_name=entity_name,
+            marker_size=float(LaunchConfiguration("marker_size").perform(context)),
+            vocabulary=LaunchConfiguration("marker_vocabulary").perform(context),
+            marker_id=int(LaunchConfiguration("marker_id").perform(context)),
+            marker_x=float(LaunchConfiguration("marker_x").perform(context)),
+            marker_y=float(LaunchConfiguration("marker_y").perform(context)),
+            marker_z=float(LaunchConfiguration("marker_z").perform(context)),
+            marker_yaw=float(LaunchConfiguration("marker_yaw").perform(context)),
+        )
+
+    return [
+        Node(
+            package="ros_gz_sim",
+            executable="create",
+            name="spawn_small_rover",
+            output="screen",
+            arguments=[
+                "-world",
+                LaunchConfiguration("world_name"),
+                "-name",
+                entity_name,
+                "-file",
+                model_file,
+                "-x",
+                LaunchConfiguration("x"),
+                "-y",
+                LaunchConfiguration("y"),
+                "-z",
+                LaunchConfiguration("z"),
+                "-Y",
+                LaunchConfiguration("yaw"),
+            ],
+        )
+    ]
+
 
 def generate_launch_description() -> LaunchDescription:
-    world_name = LaunchConfiguration("world_name")
-    entity_name = LaunchConfiguration("entity_name")
     namespace = LaunchConfiguration("namespace")
-    model_file = PathJoinSubstitution(
-        [FindPackageShare("small_rover_description"), "models", "small_rover", "model.sdf"]
-    )
     model_path = PathJoinSubstitution(
         [FindPackageShare("small_rover_description"), "models"]
     )
@@ -52,6 +101,62 @@ def generate_launch_description() -> LaunchDescription:
                 "yaw", default_value="0.0", description="Spawn yaw in rad."
             ),
             DeclareLaunchArgument(
+                "marker_enabled",
+                default_value=EnvironmentVariable(
+                    "ROVER_MARKER_ENABLED", default_value="true"
+                ),
+                description="Attach an upward-facing ArUco marker to the rover.",
+            ),
+            DeclareLaunchArgument(
+                "marker_size",
+                default_value=EnvironmentVariable(
+                    "ROVER_MARKER_SIZE", default_value="0.08"
+                ),
+                description="ArUco code side length in metres, excluding its white margin.",
+            ),
+            DeclareLaunchArgument(
+                "marker_vocabulary",
+                default_value=EnvironmentVariable(
+                    "ROVER_MARKER_VOCABULARY", default_value="DICT_4X4_1000"
+                ),
+                description="OpenCV predefined ArUco vocabulary name.",
+            ),
+            DeclareLaunchArgument(
+                "marker_id",
+                default_value=EnvironmentVariable(
+                    "ROVER_MARKER_ID", default_value="99"
+                ),
+                description="Marker ID within marker_vocabulary.",
+            ),
+            DeclareLaunchArgument(
+                "marker_x",
+                default_value=EnvironmentVariable(
+                    "ROVER_MARKER_X", default_value="-0.043195"
+                ),
+                description="Marker centre X relative to base_link in metres.",
+            ),
+            DeclareLaunchArgument(
+                "marker_y",
+                default_value=EnvironmentVariable(
+                    "ROVER_MARKER_Y", default_value="0.0"
+                ),
+                description="Marker centre Y relative to base_link in metres.",
+            ),
+            DeclareLaunchArgument(
+                "marker_z",
+                default_value=EnvironmentVariable(
+                    "ROVER_MARKER_Z", default_value="0.153"
+                ),
+                description="Marker centre Z relative to base_link in metres.",
+            ),
+            DeclareLaunchArgument(
+                "marker_yaw",
+                default_value=EnvironmentVariable(
+                    "ROVER_MARKER_YAW", default_value="0.0"
+                ),
+                description="Marker yaw relative to base_link in radians.",
+            ),
+            DeclareLaunchArgument(
                 "use_sim_time",
                 default_value="true",
                 description="Use the Gazebo simulation clock.",
@@ -69,29 +174,7 @@ def generate_launch_description() -> LaunchDescription:
                     EnvironmentVariable("GZ_SIM_RESOURCE_PATH", default_value=""),
                 ],
             ),
-            Node(
-                package="ros_gz_sim",
-                executable="create",
-                name="spawn_small_rover",
-                output="screen",
-                condition=IfCondition(LaunchConfiguration("spawn_rover")),
-                arguments=[
-                    "-world",
-                    world_name,
-                    "-name",
-                    entity_name,
-                    "-file",
-                    model_file,
-                    "-x",
-                    LaunchConfiguration("x"),
-                    "-y",
-                    LaunchConfiguration("y"),
-                    "-z",
-                    LaunchConfiguration("z"),
-                    "-Y",
-                    LaunchConfiguration("yaw"),
-                ],
-            ),
+            OpaqueFunction(function=_spawn_rover),
             Node(
                 package="ros_gz_bridge",
                 executable="parameter_bridge",

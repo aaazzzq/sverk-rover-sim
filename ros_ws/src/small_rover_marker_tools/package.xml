@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>small_rover_marker_tools</name>
+  <version>0.1.0</version>
+  <description>ArUco marker geometry helper for the small rover simulation.</description>
+  <maintainer email="devnull@example.invalid">sverk</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

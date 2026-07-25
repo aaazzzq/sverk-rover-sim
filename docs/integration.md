@@ -40,11 +40,21 @@ The drone service starts the selected world. The rover service then runs:
   world_name:=<world> \
   entity_name:=small_rover \
   namespace:=small_rover \
-  x:=<meters> y:=<meters> z:=0.013 yaw:=<radians>
+  x:=<meters> y:=<meters> z:=0.013 yaw:=<radians> \
+  marker_enabled:=true \
+  marker_size:=0.08 \
+  marker_vocabulary:=DICT_4X4_1000 \
+  marker_id:=99
 ```
 
 `ros_gz_sim create` waits for the world's create service. A restarted service
 must not intentionally spawn a second entity with the same name.
+
+The marker is generated as SDF geometry before spawning, so the rover and
+Gazebo server containers do not need to share a generated texture. The marker
+arguments also accept `ROVER_MARKER_*` environment variables. Keep the
+vocabulary and ID synchronized with the drone detector and register the
+marker as a moving target rather than adding it to the static world map.
 
 ## Shared worlds
 
