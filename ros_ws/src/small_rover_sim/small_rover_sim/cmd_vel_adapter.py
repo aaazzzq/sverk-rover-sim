@@ -11,7 +11,7 @@ from rclpy.node import Node
 
 
 class CmdVelAdapter(Node):
-    """Publish safe Gazebo commands and relay wheel odometry in REP-103 axes."""
+    """Publish watchdog-protected commands and relay Gazebo odometry."""
 
     def __init__(self) -> None:
         super().__init__("small_rover_cmd_vel_adapter")
@@ -46,22 +46,13 @@ class CmdVelAdapter(Node):
             self._gz_command_publisher.publish(command)
             return
 
-        # The generated rover model uses REP-103: +X forward and +Y left.
-        # Gazebo's wheel-velocity convention is reversed only longitudinally.
-        command.linear.x = -self._last_command.linear.x
+        command.linear.x = self._last_command.linear.x
         command.linear.y = self._last_command.linear.y
         command.angular.z = self._last_command.angular.z
         self._gz_command_publisher.publish(command)
 
     def _on_gz_odometry(self, message: Odometry) -> None:
-        odometry = Odometry()
-        odometry.header = message.header
-        odometry.child_frame_id = message.child_frame_id
-        odometry.pose = message.pose
-        odometry.twist = message.twist
-        odometry.pose.pose.position.x = -message.pose.pose.position.x
-        odometry.twist.twist.linear.x = -message.twist.twist.linear.x
-        self._odom_publisher.publish(odometry)
+        self._odom_publisher.publish(message)
 
 
 def main() -> None:

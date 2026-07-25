@@ -6,28 +6,83 @@ $modelDir = Join-Path $repoRoot 'models\small_rover'
 $modelPath = Join-Path $modelDir 'model.sdf'
 New-Item -ItemType Directory -Force -Path $modelDir | Out-Null
 
-# CAD coordinates use +Y forward and +X right.  Runtime frames use REP-103:
-# +X forward, +Y left, +Z up.  Wheel meshes retain their CAD local frame and
-# are rotated -90 deg about Z at their link pose. Mecanum handedness is paired
-# diagonally: front-left with rear-right, front-right with rear-left.
+function Write-MirroredObj {
+    param(
+        [Parameter(Mandatory = $true)][string]$SourcePath,
+        [Parameter(Mandatory = $true)][string]$DestinationPath
+    )
+
+    $culture = [System.Globalization.CultureInfo]::InvariantCulture
+    $output = [System.Collections.Generic.List[string]]::new()
+    foreach ($line in [System.IO.File]::ReadLines($SourcePath)) {
+        if ($line.StartsWith('v ') -or $line.StartsWith('vn ')) {
+            $parts = $line -split '\s+'
+            $parts[1] = (-[double]::Parse($parts[1], $culture)).ToString('0.000000', $culture)
+            $output.Add($parts -join ' ')
+            continue
+        }
+
+        if ($line.StartsWith('f ')) {
+            $parts = $line -split '\s+'
+            [System.Array]::Reverse($parts, 1, $parts.Length - 1)
+            $output.Add($parts -join ' ')
+            continue
+        }
+
+        $output.Add($line)
+    }
+
+    [System.IO.File]::WriteAllLines(
+        $DestinationPath,
+        $output,
+        [System.Text.UTF8Encoding]::new($false)
+    )
+}
+
+$wheelMeshDir = Join-Path $repoRoot 'models\small_rover_wheels\meshes'
+Write-MirroredObj `
+    -SourcePath (Join-Path $wheelMeshDir 'Mecanum_Wheel_60mm_FrontRight.obj') `
+    -DestinationPath (Join-Path $wheelMeshDir 'Mecanum_Wheel_60mm_FrontLeft.obj')
+Write-MirroredObj `
+    -SourcePath (Join-Path $wheelMeshDir 'Mecanum_Wheel_60mm_RearRight.obj') `
+    -DestinationPath (Join-Path $wheelMeshDir 'Mecanum_Wheel_60mm_RearLeft.obj')
+
+# CAD coordinates use +Y forward and +X right. Runtime frames use REP-103:
+# +X forward, +Y left, +Z up. Wheel meshes retain their CAD local frame and
+# are rotated -90 deg about Z at their link pose.
 $wheelLocations = @(
-    @{ Name = 'front_left';  MeshModel = 'sverk_mecanum_wheel';       Mesh = 'Mecanum_Wheel_60mm_Left.obj';  RightHanded = $false; X = 0.064610;  Y = 0.090500 },
-    @{ Name = 'front_right'; MeshModel = 'sverk_mecanum_wheel_right'; Mesh = 'Mecanum_Wheel_60mm_Right.obj'; RightHanded = $true;  X = 0.064610;  Y = -0.090500 },
-    @{ Name = 'rear_left';   MeshModel = 'sverk_mecanum_wheel_right'; Mesh = 'Mecanum_Wheel_60mm_Right.obj'; RightHanded = $true;  X = -0.074500; Y = 0.090500 },
-    @{ Name = 'rear_right';  MeshModel = 'sverk_mecanum_wheel';       Mesh = 'Mecanum_Wheel_60mm_Left.obj';  RightHanded = $false; X = -0.074500; Y = -0.090500 }
+    @{ Name = 'front_left';  Mesh = 'Mecanum_Wheel_60mm_FrontLeft.obj';  Front = $true;  MirrorX = $true;  MirrorY = $false; X = 0.064610;  Y = 0.090500 },
+    @{ Name = 'front_right'; Mesh = 'Mecanum_Wheel_60mm_FrontRight.obj'; Front = $true;  MirrorX = $false; MirrorY = $false; X = 0.064610;  Y = -0.090500 },
+    @{ Name = 'rear_left';   Mesh = 'Mecanum_Wheel_60mm_RearLeft.obj';   Front = $false; MirrorX = $true;  MirrorY = $false; X = -0.074500; Y = 0.090500 },
+    @{ Name = 'rear_right';  Mesh = 'Mecanum_Wheel_60mm_RearRight.obj';  Front = $false; MirrorX = $false; MirrorY = $false; X = -0.074500; Y = -0.090500 }
 )
 
-# Positions and RPY values are measured in each wheel's CAD frame.  The local
-# X axis of every roller is its axle and is made the passive joint axis.
-$rollers = @(
-    @{ Index = 0; X = 0.000003; Y = 0.022937000; Z = -0.001705000; Roll = 0.000000000; Pitch = 0.782577251; Yaw = -0.075350181 },
-    @{ Index = 1; X = 0.000003; Y = 0.017424525; Z = 0.015013291; Roll = 0.988897628; Pitch = 0.566086368; Yaw = 0.577602867 },
-    @{ Index = 2; X = 0.000003; Y = 0.001705000; Z = 0.022937000; Roll = 1.623977028; Pitch = 0.053405549; Yaw = 0.783997995 },
-    @{ Index = 3; X = 0.000003; Y = -0.015013291; Z = 0.017424525; Roll = 2.223416667; Pitch = -0.478943805; Yaw = 0.648925998 },
-    @{ Index = 4; X = 0.000003; Y = -0.022937000; Z = 0.001705000; Roll = 3.141592654; Pitch = -0.782577251; Yaw = 0.075350181 },
-    @{ Index = 5; X = 0.000003; Y = -0.017424525; Z = -0.015013291; Roll = -2.152695026; Pitch = -0.566086368; Yaw = -0.577602867 },
-    @{ Index = 6; X = 0.000003; Y = -0.001705000; Z = -0.022937000; Roll = -1.517615626; Pitch = -0.053405549; Yaw = -0.783997995 },
-    @{ Index = 7; X = 0.000003; Y = 0.015013291; Z = -0.017424525; Roll = -0.918175987; Pitch = 0.478943805; Yaw = -0.648925998 }
+# The corrected front-right reference has roller-axis plane angles of 5.38 deg
+# to XZ, 45 deg to YZ, and 135.5 deg to XY. Each subsequent roller is the same
+# transform rotated 45 degrees around the wheel axle.
+$frontReferenceRollers = @(
+    @{ Index = 0; X = 0.000003; Y = 0.022801000; Z = 0.003020000; Roll = 0.000000000; Pitch = 0.776639639; Yaw = 0.131828760 },
+    @{ Index = 1; X = 0.000003; Y = 0.013987279; Z = 0.018258204; Roll = 0.888508739; Pitch = 0.443722978; Yaw = 0.671482516 },
+    @{ Index = 2; X = 0.000003; Y = -0.003020000; Z = 0.022801000; Roll = 1.478126516; Pitch = -0.093895659; Yaw = 0.780996596 },
+    @{ Index = 3; X = 0.000003; Y = -0.018258204; Z = 0.013987279; Roll = 2.130530953; Pitch = -0.596678917; Yaw = 0.545659158 },
+    @{ Index = 4; X = 0.000003; Y = -0.022801000; Z = -0.003020000; Roll = 3.141592654; Pitch = -0.776639639; Yaw = -0.131828760 },
+    @{ Index = 5; X = 0.000003; Y = -0.013987279; Z = -0.018258204; Roll = -2.253083915; Pitch = -0.443722978; Yaw = -0.671482516 },
+    @{ Index = 6; X = 0.000003; Y = 0.003020000; Z = -0.022801000; Roll = -1.663466138; Pitch = 0.093895659; Yaw = -0.780996596 },
+    @{ Index = 7; X = 0.000003; Y = 0.018258204; Z = -0.013987279; Roll = -1.011061701; Pitch = 0.596678917; Yaw = -0.545659158 }
+)
+
+# Rear-right is an independent measured assembly. The imported rear hub reverses
+# the measured CAD Z sign, so its reference roller uses -45 deg local pitch.
+# Rear-left mirrors the corrected assembly.
+$rearReferenceRollers = @(
+    @{ Index = 0; X = 0.000003; Y = 0.023000000; Z = 0.000031000; Roll = 0.000000000; Pitch = -0.785398163; Yaw = 0.000000000 },
+    @{ Index = 1; X = 0.000003; Y = 0.016241536; Z = 0.016285376; Roll = 0.955316618; Pitch = -0.523598776; Yaw = -0.615479709 },
+    @{ Index = 2; X = 0.000003; Y = -0.000031000; Z = 0.023000000; Roll = 1.570796327; Pitch = 0.000000000; Yaw = -0.785398163 },
+    @{ Index = 3; X = 0.000003; Y = -0.016285376; Z = 0.016241536; Roll = 2.186276035; Pitch = 0.523598776; Yaw = -0.615479709 },
+    @{ Index = 4; X = 0.000003; Y = -0.023000000; Z = -0.000031000; Roll = 3.141592654; Pitch = 0.785398163; Yaw = 0.000000000 },
+    @{ Index = 5; X = 0.000003; Y = -0.016241536; Z = -0.016285376; Roll = -2.186276035; Pitch = 0.523598776; Yaw = 0.615479709 },
+    @{ Index = 6; X = 0.000003; Y = 0.000031000; Z = -0.023000000; Roll = -1.570796327; Pitch = 0.000000000; Yaw = 0.785398163 },
+    @{ Index = 7; X = 0.000003; Y = 0.016285376; Z = -0.016241536; Roll = -0.955316618; Pitch = -0.523598776; Yaw = 0.615479709 }
 )
 
 $lines = [System.Collections.Generic.List[string]]::new()
@@ -55,8 +110,8 @@ Add-Line ''
 
 foreach ($wheel in $wheelLocations) {
     $prefix = $wheel.Name
-    $meshUri = "model://$($wheel.MeshModel)/meshes/$($wheel.Mesh)"
-    $rollerUri = "model://$($wheel.MeshModel)/meshes/roller_Varsayilan.obj"
+    $meshUri = "model://small_rover_wheels/meshes/$($wheel.Mesh)"
+    $rollerUri = 'model://small_rover_wheels/meshes/roller_Varsayilan.obj'
     $x = $wheel.X.ToString('F6', [System.Globalization.CultureInfo]::InvariantCulture)
     $y = $wheel.Y.ToString('F6', [System.Globalization.CultureInfo]::InvariantCulture)
     $wheelPose = "$x $y 0.017000 0 0 -1.570796327"
@@ -67,18 +122,19 @@ foreach ($wheel in $wheelLocations) {
     Add-Line "      <visual name=`"wheel_mesh`"><geometry><mesh><uri>$meshUri</uri></mesh></geometry></visual>"
     Add-Line '      <collision name="hub_collision"><pose>0 0 0 0 1.570796327 0</pose><geometry><cylinder><radius>0.017</radius><length>0.022</length></cylinder></geometry><surface><friction><ode><mu>0.8</mu><mu2>0.8</mu2></ode></friction></surface></collision>'
     Add-Line '    </link>'
-    # The wheel mesh, cylinder collision, and roller layout all use local X as
-    # their axle. The joint pose maps that local axle into the rover's lateral
-    # direction, so the controller must drive local X as well.
-    Add-Line "    <joint name=`"${prefix}_wheel_joint`" type=`"revolute`"><pose relative_to=`"base_link`">$wheelPose</pose><parent>base_link</parent><child>${prefix}_wheel</child><axis><xyz>1 0 0</xyz><limit><lower>-1e16</lower><upper>1e16</upper><effort>1.5</effort><velocity>80</velocity></limit><dynamics><damping>0.0005</damping></dynamics></axis></joint>"
+    # All wheel joints use the same positive axle direction in the rover frame,
+    # matching the stock Gazebo mecanum controller convention.
+    Add-Line "    <joint name=`"${prefix}_wheel_joint`" type=`"revolute`"><pose relative_to=`"base_link`">$wheelPose</pose><parent>base_link</parent><child>${prefix}_wheel</child><axis><xyz expressed_in=`"base_link`">0 1 0</xyz><limit><lower>-1e16</lower><upper>1e16</upper><effort>1.5</effort><velocity>80</velocity></limit><dynamics><damping>0.0005</damping></dynamics></axis></joint>"
 
-    $isRightWheel = $wheel.RightHanded
-    foreach ($roller in $rollers) {
+    $rollerSet = if ($wheel.Front) { $frontReferenceRollers } else { $rearReferenceRollers }
+    foreach ($roller in $rollerSet) {
         $index = $roller.Index
-        $rollerY = if ($isRightWheel) { -$roller.Y } else { $roller.Y }
-        $rollerRoll = if ($isRightWheel) { -$roller.Roll } else { $roller.Roll }
-        $rollerYaw = if ($isRightWheel) { -$roller.Yaw } else { $roller.Yaw }
-        $poseValues = @($roller.X, $rollerY, $roller.Z, $rollerRoll, $roller.Pitch, $rollerYaw | ForEach-Object {
+        $rollerX = if ($wheel.MirrorX) { -$roller.X } else { $roller.X }
+        $rollerY = if ($wheel.MirrorY) { -$roller.Y } else { $roller.Y }
+        $rollerRoll = if ($wheel.MirrorY) { -$roller.Roll } else { $roller.Roll }
+        $rollerPitch = if ($wheel.MirrorX) { -$roller.Pitch } else { $roller.Pitch }
+        $rollerYaw = if ($wheel.MirrorX -xor $wheel.MirrorY) { -$roller.Yaw } else { $roller.Yaw }
+        $poseValues = @($rollerX, $rollerY, $roller.Z, $rollerRoll, $rollerPitch, $rollerYaw | ForEach-Object {
             $_.ToString('0.000000000', [System.Globalization.CultureInfo]::InvariantCulture)
         })
         $pose = $poseValues -join ' '
