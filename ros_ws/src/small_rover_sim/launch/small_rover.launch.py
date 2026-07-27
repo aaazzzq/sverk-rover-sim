@@ -3,12 +3,14 @@
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction, SetEnvironmentVariable
+from launch.conditions import IfCondition
 from launch.substitutions import (
     EnvironmentVariable,
     LaunchConfiguration,
     PathJoinSubstitution,
 )
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 from small_rover_sim.marker_model import create_marker_model
@@ -157,6 +159,34 @@ def generate_launch_description() -> LaunchDescription:
                 description="Marker yaw relative to base_link in radians.",
             ),
             DeclareLaunchArgument(
+                "marker_localization_enabled",
+                default_value=EnvironmentVariable(
+                    "ROVER_MARKER_LOCALIZATION_ENABLED", default_value="true"
+                ),
+                description="Localize the rover from the drone's detection of its marker.",
+            ),
+            DeclareLaunchArgument(
+                "drone_base_frame",
+                default_value=EnvironmentVariable(
+                    "ROVER_DRONE_BASE_FRAME", default_value="base_link"
+                ),
+                description="Drone body TF frame used by the camera extrinsic.",
+            ),
+            DeclareLaunchArgument(
+                "drone_camera_frame",
+                default_value=EnvironmentVariable(
+                    "ROVER_DRONE_CAMERA_FRAME", default_value="camera_optical_1"
+                ),
+                description="Drone camera optical TF frame.",
+            ),
+            DeclareLaunchArgument(
+                "vision_frame",
+                default_value=EnvironmentVariable(
+                    "ROVER_VISION_FRAME", default_value="small_rover_vision"
+                ),
+                description="TF child frame for the drone-derived rover pose.",
+            ),
+            DeclareLaunchArgument(
                 "use_sim_time",
                 default_value="true",
                 description="Use the Gazebo simulation clock.",
@@ -203,6 +233,39 @@ def generate_launch_description() -> LaunchDescription:
                     {
                         "command_timeout_s": LaunchConfiguration("command_timeout_s"),
                         "use_sim_time": LaunchConfiguration("use_sim_time"),
+                    }
+                ],
+            ),
+            Node(
+                package="small_rover_sim",
+                executable="drone_marker_localization",
+                name="drone_marker_localization",
+                namespace=namespace,
+                output="screen",
+                condition=IfCondition(LaunchConfiguration("marker_localization_enabled")),
+                parameters=[
+                    {
+                        "marker_id": ParameterValue(
+                            LaunchConfiguration("marker_id"), value_type=int
+                        ),
+                        "marker_x": ParameterValue(
+                            LaunchConfiguration("marker_x"), value_type=float
+                        ),
+                        "marker_y": ParameterValue(
+                            LaunchConfiguration("marker_y"), value_type=float
+                        ),
+                        "marker_z": ParameterValue(
+                            LaunchConfiguration("marker_z"), value_type=float
+                        ),
+                        "marker_yaw": ParameterValue(
+                            LaunchConfiguration("marker_yaw"), value_type=float
+                        ),
+                        "drone_base_frame": LaunchConfiguration("drone_base_frame"),
+                        "camera_frame": LaunchConfiguration("drone_camera_frame"),
+                        "vision_frame": LaunchConfiguration("vision_frame"),
+                        "use_sim_time": ParameterValue(
+                            LaunchConfiguration("use_sim_time"), value_type=bool
+                        ),
                     }
                 ],
             ),

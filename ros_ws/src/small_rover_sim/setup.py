@@ -25,6 +25,7 @@ setup(
     entry_points={
         "console_scripts": [
             "cmd_vel_adapter = small_rover_sim.cmd_vel_adapter:main",
+            "drone_marker_localization = small_rover_sim.drone_marker_localization:main",
         ],
     },
 )

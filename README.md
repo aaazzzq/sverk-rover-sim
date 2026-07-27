@@ -118,6 +118,7 @@ The launch file can attach an upward-facing `aruco_marker_link` to
 | `marker_id` | `ROVER_MARKER_ID` | `99` |
 | `marker_x`, `marker_y`, `marker_z` | `ROVER_MARKER_X`, `ROVER_MARKER_Y`, `ROVER_MARKER_Z` | `-0.043195`, `0.0`, `0.153` m |
 | `marker_yaw` | `ROVER_MARKER_YAW` | `0.0` rad |
+| `marker_localization_enabled` | `ROVER_MARKER_LOCALIZATION_ENABLED` | `true` |
 
 `marker_size` is the side length of the encoded black square; the generated
 white margin is additional. The vocabulary and ID must match the drone ArUco

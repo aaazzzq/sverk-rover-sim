@@ -75,3 +75,19 @@ The initial interface supports one rover:
 
 A shared coordinator should establish the transform between the scenario
 `map` frame and rover odometry. Wheel odometry alone will drift.
+
+## Drone-marker localization
+
+`small_rover_sim` starts `drone_marker_localization` by default. It listens to
+the drone's `/aruco/det/markers` and `/aruco/world_pose`, matches the rover
+marker ID, and accepts only fresh nonzero marker poses. Their timestamp is the
+`MarkerArray` header. It waits for bracketing drone poses and interpolates them
+at that timestamp before publishing `/small_rover/vision/pose`,
+`/small_rover/vision/odometry`, `/small_rover/vision/valid`, and the debug TF
+`<world_pose frame> -> small_rover_vision` (normally
+`map -> small_rover_vision`).
+
+The node keeps Gazebo's `base_link` untouched. It uses the marker mounting
+values from `ROVER_MARKER_*`, so the generated model and transform stay
+synchronized. The SITL rover overlay enables non-map PnP and passes the same
+marker ID and size to the drone detector.
