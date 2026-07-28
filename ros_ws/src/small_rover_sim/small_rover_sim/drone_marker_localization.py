@@ -306,10 +306,8 @@ class DroneMarkerLocalization(Node):
             return
 
         if not _has_fresh_pnp_pose(marker.pose):
-            self._warn_throttled(
-                "missing-pnp",
-                "Rover marker was detected without a fresh PnP pose. Enable "
-                "publish_non_map_marker_poses on the drone.",
+            self.get_logger().debug(
+                "Rover marker sample does not contain a fresh PnP pose"
             )
             return
 
@@ -386,25 +384,46 @@ class DroneMarkerLocalization(Node):
         cached = self._camera_extrinsics.get(camera_frame)
         if cached is not None:
             return cached
-        try:
-            transform = self._tf_buffer.lookup_transform(
-                self._drone_base_frame,
-                camera_frame,
-                Time(),
-                timeout=Duration(seconds=0.05),
-            )
-        except TransformException as error:
+
+        candidates = [camera_frame]
+        if self._default_camera_frame not in candidates:
+            candidates.append(self._default_camera_frame)
+
+        transform = None
+        errors = []
+        resolved_frame = camera_frame
+        for candidate in candidates:
+            try:
+                transform = self._tf_buffer.lookup_transform(
+                    self._drone_base_frame,
+                    candidate,
+                    Time(),
+                    timeout=Duration(seconds=0.05),
+                )
+                resolved_frame = candidate
+                break
+            except TransformException as error:
+                errors.append("%s: %s" % (candidate, error))
+
+        if transform is None:
             self._warn_throttled(
                 "camera-extrinsic",
-                "Waiting for TF %s -> %s: %s"
-                % (self._drone_base_frame, camera_frame, error),
+                "Waiting for camera extrinsic from %s: %s"
+                % (self._drone_base_frame, "; ".join(errors)),
             )
             return None
 
         extrinsic = _from_transform(transform.transform)
         self._camera_extrinsics[camera_frame] = extrinsic
         self.get_logger().info(
-            "Using camera extrinsic %s -> %s" % (self._drone_base_frame, camera_frame)
+            "Using camera extrinsic %s -> %s%s"
+            % (
+                self._drone_base_frame,
+                resolved_frame,
+                " for messages labelled %s" % camera_frame
+                if resolved_frame != camera_frame
+                else "",
+            )
         )
         return extrinsic
 
