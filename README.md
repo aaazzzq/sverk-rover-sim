@@ -119,10 +119,18 @@ The launch file can attach an upward-facing `aruco_marker_link` to
 | `marker_x`, `marker_y`, `marker_z` | `ROVER_MARKER_X`, `ROVER_MARKER_Y`, `ROVER_MARKER_Z` | `-0.043195`, `0.0`, `0.153` m |
 | `marker_yaw` | `ROVER_MARKER_YAW` | `0.0` rad |
 | `marker_localization_enabled` | `ROVER_MARKER_LOCALIZATION_ENABLED` | `true` |
+| `drone_camera_frame` | `ROVER_DRONE_CAMERA_FRAME` | `camera_optical_1` |
+| `drone_camera_frame_aliases` | `ROVER_DRONE_CAMERA_FRAME_ALIASES` | empty |
 
 `marker_size` is the side length of the encoded black square; the generated
 white margin is additional. The vocabulary and ID must match the drone ArUco
 detector. Its top edge points toward rover `+X`.
+
+The detector's `MarkerArray.header.frame_id`, the drone static camera TF and
+`drone_camera_frame` should normally name the same camera frame. If a legacy
+deployment labels that same physical camera differently, configure an explicit
+comma-separated alias such as `main_camera_optical=camera_optical_1`. The rover
+never substitutes an arbitrary available camera transform for a marker message.
 
 ## ROS interface
 

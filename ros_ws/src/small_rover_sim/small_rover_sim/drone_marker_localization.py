@@ -61,6 +61,33 @@ def _has_fresh_pnp_pose(pose: Pose) -> bool:
     )
 
 
+def _parse_camera_frame_aliases(value: str) -> dict[str, str]:
+    """Parse explicit MarkerArray-frame to TF-frame compatibility aliases.
+
+    A marker pose is expressed in its message header frame.  Do not silently
+    substitute another camera just because its TF happens to be available: an
+    operator must opt in to every historical frame-name alias.
+    """
+
+    aliases: dict[str, str] = {}
+    for item in value.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        source, separator, target = item.partition("=")
+        source = source.strip()
+        target = target.strip()
+        if not separator or not source or not target:
+            raise ValueError(
+                "camera_frame_aliases must use comma-separated source=target entries"
+            )
+        previous = aliases.get(source)
+        if previous is not None and previous != target:
+            raise ValueError("camera_frame_aliases assigns multiple targets to %s" % source)
+        aliases[source] = target
+    return aliases
+
+
 def _normalise_quaternion(q: Quaternion) -> Quaternion:
     norm = math.sqrt(sum(component * component for component in q))
     if norm < 1e-12:
@@ -181,6 +208,7 @@ class DroneMarkerLocalization(Node):
         self.declare_parameter("marker_coordinate_yaw_offset", -math.pi / 2.0)
         self.declare_parameter("drone_base_frame", "base_link")
         self.declare_parameter("camera_frame", "camera_optical_1")
+        self.declare_parameter("camera_frame_aliases", "")
         self.declare_parameter("vision_frame", "small_rover_vision")
         self.declare_parameter("markers_topic", "/aruco/det/markers")
         self.declare_parameter("drone_world_pose_topic", "/aruco/world_pose")
@@ -202,6 +230,9 @@ class DroneMarkerLocalization(Node):
         )
         self._drone_base_frame = str(self.get_parameter("drone_base_frame").value)
         self._default_camera_frame = str(self.get_parameter("camera_frame").value)
+        self._camera_frame_aliases = _parse_camera_frame_aliases(
+            str(self.get_parameter("camera_frame_aliases").value)
+        )
         self._vision_frame = str(self.get_parameter("vision_frame").value)
         self._observation_timeout_ns = int(
             float(self.get_parameter("observation_timeout_s").value) * 1_000_000_000
@@ -254,6 +285,14 @@ class DroneMarkerLocalization(Node):
             "Waiting for moving ArUco marker %d on %s"
             % (self._marker_id, self.get_parameter("markers_topic").value)
         )
+        if self._camera_frame_aliases:
+            self.get_logger().info(
+                "Configured camera frame aliases: %s"
+                % ", ".join(
+                    "%s=%s" % item
+                    for item in sorted(self._camera_frame_aliases.items())
+                )
+            )
 
     def _warn_throttled(self, key: str, message: str) -> None:
         now = time.monotonic()
@@ -381,47 +420,42 @@ class DroneMarkerLocalization(Node):
         )
 
     def _base_to_camera(self, camera_frame: str) -> Optional[RigidTransform]:
-        cached = self._camera_extrinsics.get(camera_frame)
+        tf_camera_frame = self._camera_frame_aliases.get(camera_frame, camera_frame)
+        cached = self._camera_extrinsics.get(tf_camera_frame)
         if cached is not None:
             return cached
 
-        candidates = [camera_frame]
-        if self._default_camera_frame not in candidates:
-            candidates.append(self._default_camera_frame)
-
-        transform = None
-        errors = []
-        resolved_frame = camera_frame
-        for candidate in candidates:
-            try:
-                transform = self._tf_buffer.lookup_transform(
-                    self._drone_base_frame,
-                    candidate,
-                    Time(),
-                    timeout=Duration(seconds=0.05),
-                )
-                resolved_frame = candidate
-                break
-            except TransformException as error:
-                errors.append("%s: %s" % (candidate, error))
-
-        if transform is None:
+        try:
+            transform = self._tf_buffer.lookup_transform(
+                self._drone_base_frame,
+                tf_camera_frame,
+                Time(),
+                timeout=Duration(seconds=0.05),
+            )
+        except TransformException as error:
             self._warn_throttled(
                 "camera-extrinsic",
-                "Waiting for camera extrinsic from %s: %s"
-                % (self._drone_base_frame, "; ".join(errors)),
+                "Waiting for camera extrinsic %s -> %s%s: %s"
+                % (
+                    self._drone_base_frame,
+                    tf_camera_frame,
+                    " (aliased from %s)" % camera_frame
+                    if tf_camera_frame != camera_frame
+                    else "",
+                    error,
+                ),
             )
             return None
 
         extrinsic = _from_transform(transform.transform)
-        self._camera_extrinsics[camera_frame] = extrinsic
+        self._camera_extrinsics[tf_camera_frame] = extrinsic
         self.get_logger().info(
             "Using camera extrinsic %s -> %s%s"
             % (
                 self._drone_base_frame,
-                resolved_frame,
+                tf_camera_frame,
                 " for messages labelled %s" % camera_frame
-                if resolved_frame != camera_frame
+                if tf_camera_frame != camera_frame
                 else "",
             )
         )

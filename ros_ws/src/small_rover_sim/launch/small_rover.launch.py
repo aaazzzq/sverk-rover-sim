@@ -180,6 +180,16 @@ def generate_launch_description() -> LaunchDescription:
                 description="Drone camera optical TF frame.",
             ),
             DeclareLaunchArgument(
+                "drone_camera_frame_aliases",
+                default_value=EnvironmentVariable(
+                    "ROVER_DRONE_CAMERA_FRAME_ALIASES", default_value=""
+                ),
+                description=(
+                    "Explicit MarkerArray-frame to TF-frame aliases, as "
+                    "comma-separated source=target entries."
+                ),
+            ),
+            DeclareLaunchArgument(
                 "vision_frame",
                 default_value=EnvironmentVariable(
                     "ROVER_VISION_FRAME", default_value="small_rover_vision"
@@ -262,6 +272,9 @@ def generate_launch_description() -> LaunchDescription:
                         ),
                         "drone_base_frame": LaunchConfiguration("drone_base_frame"),
                         "camera_frame": LaunchConfiguration("drone_camera_frame"),
+                        "camera_frame_aliases": LaunchConfiguration(
+                            "drone_camera_frame_aliases"
+                        ),
                         "vision_frame": LaunchConfiguration("vision_frame"),
                         "use_sim_time": ParameterValue(
                             LaunchConfiguration("use_sim_time"), value_type=bool

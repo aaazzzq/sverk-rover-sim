@@ -91,3 +91,8 @@ The node keeps Gazebo's `base_link` untouched. It uses the marker mounting
 values from `ROVER_MARKER_*`, so the generated model and transform stay
 synchronized. The SITL rover overlay enables non-map PnP and passes the same
 marker ID and size to the drone detector.
+
+The marker-message header must name the camera TF that observed it. For a
+renamed legacy camera, set `ROVER_DRONE_CAMERA_FRAME_ALIASES` to an explicit
+comma-separated `message_frame=tf_frame` mapping. The node waits for the exact
+camera TF otherwise; it never falls back to a different available camera.
